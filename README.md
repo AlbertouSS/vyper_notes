@@ -1,0 +1,1 @@
+Quick notes from [vyper documentation](https://docs.vyperlang.org/en/latest/toctree.html) and [cyfrin updraft course](https://updraft.cyfrin.io/courses/intro-python-vyper-smart-contract-development)
