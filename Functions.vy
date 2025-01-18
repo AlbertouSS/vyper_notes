@@ -33,3 +33,9 @@ def pure(any_number: uint8 = 255) -> uint8:
 @external
 def call_internal():
     self.store_internal(800)
+
+# RETURNING MULTIPLE VALUES
+@external
+@pure
+def return_multiple() -> (uint256, bool, String[5]):
+    return(256, True, "abcde")    
