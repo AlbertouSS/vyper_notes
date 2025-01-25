@@ -3,10 +3,13 @@
 
                                                 # FIXED SIZE LIST
 # array of integers
+# it has always the same size/length, all elements initialized to 0
 int_array : public(uint256[5])
 
                                                 # DYNAMIC ARRAYS
-#TODO
+# array of integers
+# same as a fixed array but with dynamic length, it starts empty [], to add element use 'append' method
+dynamyc_array: public(DynArray[uint256, 5])
 
                                                 # MAPPINGS
 # mapping of an address and an integer
