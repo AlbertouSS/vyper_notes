@@ -17,6 +17,8 @@ interface AggregatorV3Interface:
 minimum_usd: uint256
 price_feed: AggregatorV3Interface
 owner: address
+founders: public(DynArray[address, 100])
+founder_to_amount_funded: public(HashMap[address, uint256])
 
 @deploy
 def __init__(price_feed_address: address):
@@ -33,11 +35,14 @@ def fund():
     '''
     usd_value_of_eth: uint256 = self._get_eth_to_usd_rate(msg.value)
     assert usd_value_of_eth >= self.minimum_usd, "The minimum amount to fund is $"
+    self.founders.append(msg.sender)
+    self.founder_to_amount_funded[msg.sender] += msg.value
 
 @external
 def withdraw(amount: uint256):
     assert msg.sender == self.owner, "You-re not the owner"
     send(self.owner, self.balance)
+    self.founders = [] # reseting array
 
 
 @internal
