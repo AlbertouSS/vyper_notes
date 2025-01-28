@@ -1,5 +1,9 @@
-# pragma version 0.4.0
-# @license MIT
+# pragma version ^0.4.0
+'''
+@license MIT
+@title Buy Me A Coffe
+@author albertou.eth
+'''
 
 # Get funds from users
 # Withdraw funds
@@ -13,16 +17,15 @@ interface AggregatorV3Interface:
     def version() -> uint256: view
     def latestAnswer() -> int256: view
 
-# state variables
-minimum_usd: uint256
-price_feed: AggregatorV3Interface
-owner: address
-founders: public(DynArray[address, 100])
-founder_to_amount_funded: public(HashMap[address, uint256])
+
+MINIMUM_USD: public(constant(uint256)) = as_wei_value(5, "ether") # 18 decimals
+price_feed: public(AggregatorV3Interface)
+owner: public(address)
+funders: public(DynArray[address, 100])
+funder_to_amount_funded: public(HashMap[address, uint256])
 
 @deploy
 def __init__(price_feed_address: address):
-    self.minimum_usd = as_wei_value(5, "ether") # 18 decimals
     # Address of the chainlink (sepolia) contract data feed for ETH/USD price 0x694AA1769357215DE4FAC081bf1f309aDC325306
     self.price_feed = AggregatorV3Interface(price_feed_address)
     self.owner = msg.sender
@@ -34,15 +37,19 @@ def fund():
     Allows users to send a minimum amount of crypto to this contract
     '''
     usd_value_of_eth: uint256 = self._get_eth_to_usd_rate(msg.value)
-    assert usd_value_of_eth >= self.minimum_usd, "The minimum amount to fund is $"
-    self.founders.append(msg.sender)
-    self.founder_to_amount_funded[msg.sender] += msg.value
+    assert usd_value_of_eth >= MINIMUM_USD, "The minimum amount to fund is $"
+    self.funders.append(msg.sender)
+    self.funder_to_amount_funded[msg.sender] += msg.value
 
 @external
-def withdraw(amount: uint256):
+def withdraw():
     assert msg.sender == self.owner, "You-re not the owner"
     send(self.owner, self.balance)
-    self.founders = [] # reseting array
+    # resetting array
+    self.funders = []
+    # resetting hash (this implementation is not effective to save gas)
+    for funder: address in self.funders:
+        self.funder_to_amount_funded[funder] = 0
 
 
 @internal
