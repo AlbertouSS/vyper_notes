@@ -17,22 +17,35 @@ interface AggregatorV3Interface:
     def version() -> uint256: view
     def latestAnswer() -> int256: view
 
-
+# these are not state vars
 MINIMUM_USD: public(constant(uint256)) = as_wei_value(5, "ether") # 18 decimals
-price_feed: public(AggregatorV3Interface)
-owner: public(address)
+PRICE_FEED: public(immutable(AggregatorV3Interface))
+OWNER: public(immutable(address))
+PRECISION: constant(uint256) = 10**18
+
+# state/storage vars
 funders: public(DynArray[address, 100])
 funder_to_amount_funded: public(HashMap[address, uint256])
 
 @deploy
 def __init__(price_feed_address: address):
     # Address of the chainlink (sepolia) contract data feed for ETH/USD price 0x694AA1769357215DE4FAC081bf1f309aDC325306
-    self.price_feed = AggregatorV3Interface(price_feed_address)
-    self.owner = msg.sender
+    PRICE_FEED = AggregatorV3Interface(price_feed_address)
+    OWNER = msg.sender
 
 @external
-@payable # payable allows this function to handle value/crypto
+@payable
+def __default__():
+    self._fund()
+
+@external
+@payable
 def fund():
+    self._fund()
+
+@internal
+@payable # payable allows this function to handle value/crypto
+def _fund():
     '''
     Allows users to send a minimum amount of crypto to this contract
     '''
@@ -43,8 +56,9 @@ def fund():
 
 @external
 def withdraw():
-    assert msg.sender == self.owner, "You-re not the owner"
-    send(self.owner, self.balance)
+    assert msg.sender == OWNER, "You-re not the owner"
+    # send(OWNER, self.balance) -> this could be a way to send ETH but DO NOT USE IT
+    raw_call(OWNER, b"", value = self.balance) # prefer this way instead
     # resetting array
     self.funders = []
     # resetting hash (this implementation is not effective to save gas)
@@ -61,12 +75,12 @@ def _get_eth_to_usd_rate(eth_amount: uint256) -> uint256:
     '''
     # calling an EXTERNAL contract through the AggregatorV3Interface interface
     # staticcall in this context means, no change is intended in the EVM via this call (used in pure or view functions)
-    price: int256 = staticcall self.price_feed.latestAnswer() #this returns something like 332777940000
-    decimals: uint8 = staticcall self.price_feed.decimals() # this returns something like 8
+    price: int256 = staticcall PRICE_FEED.latestAnswer() #this returns something like 332777940000
+    decimals: uint8 = staticcall PRICE_FEED.decimals() # this returns something like 8
     # For the sake of calculations, We increment the decimals precision from 8 to 10
     # We need 10 more zeroes. So, mutiply the price by 10**10
     eth_price: uint256 = (convert(price, uint256)) * (10**10) # 332777940000 -> 3327779400000000000000 with a 10 digit precision
-    eth_amount_in_usd: uint256 = (eth_amount * eth_price) // (10**18) # integer division
+    eth_amount_in_usd: uint256 = (eth_amount * eth_price) // PRECISION # integer division
     return eth_amount_in_usd
 
 @external
