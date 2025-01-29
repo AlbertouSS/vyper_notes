@@ -18,7 +18,8 @@ interface AggregatorV3Interface:
     def latestAnswer() -> int256: view
 
 # these are not state vars
-MINIMUM_USD: public(constant(uint256)) = as_wei_value(5, "ether") # 18 decimals
+MINIMUM_USD: public(constant(uint256)) = 5 # Dolars
+ETH_TO_WEI: public(constant(uint256)) = 10**18
 PRICE_FEED: public(immutable(AggregatorV3Interface))
 OWNER: public(immutable(address))
 PRECISION: constant(uint256) = 10**18
@@ -48,9 +49,10 @@ def fund():
 def _fund():
     '''
     Allows users to send a minimum amount of crypto to this contract
+    Amount is expected in wei
     '''
-    usd_value_of_eth: uint256 = self._get_eth_to_usd_rate(msg.value)
-    assert usd_value_of_eth >= MINIMUM_USD, "The minimum amount to fund is $"
+    minimum_usd_in_wei: uint256 = (ETH_TO_WEI * MINIMUM_USD) // self._get_eth_to_usd_rate(msg.value)
+    assert msg.value >= minimum_usd_in_wei, "The minimum amount to fund is $"
     self.funders.append(msg.sender)
     self.funder_to_amount_funded[msg.sender] += msg.value
 
@@ -77,11 +79,9 @@ def _get_eth_to_usd_rate(eth_amount: uint256) -> uint256:
     # staticcall in this context means, no change is intended in the EVM via this call (used in pure or view functions)
     price: int256 = staticcall PRICE_FEED.latestAnswer() #this returns something like 332777940000
     decimals: uint8 = staticcall PRICE_FEED.decimals() # this returns something like 8
-    # For the sake of calculations, We increment the decimals precision from 8 to 10
-    # We need 10 more zeroes. So, mutiply the price by 10**10
-    eth_price: uint256 = (convert(price, uint256)) * (10**10) # 332777940000 -> 3327779400000000000000 with a 10 digit precision
-    eth_amount_in_usd: uint256 = (eth_amount * eth_price) // PRECISION # integer division
+    eth_amount_in_usd: uint256 = (convert(price, uint256)) // (10 ** convert(decimals, uint256)) 
     return eth_amount_in_usd
+
 
 @external
 @view
