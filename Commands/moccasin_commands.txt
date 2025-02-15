@@ -1,0 +1,11 @@
+# creates a moccasin project
+mox init
+
+# runs the tests
+mox tests
+
+# deploys the contract
+mox run deploy
+
+# compiles the project
+mox compile
