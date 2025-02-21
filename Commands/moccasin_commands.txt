@@ -2,10 +2,25 @@
 mox init
 
 # runs the tests
-mox tests
+mox test
 
 # deploys the contract
-mox run deploy
+mox run deploy_script_without_py_extension
 
-# compiles the project
+# import a private key into an encrypted keystore
+mox wallet import name
+
+# deploys to a network (anvil in this example) and uses the given account (refering to the encrypted key)
+mox run deploy_script_without_py_extension --network anvil --account acount_name
+
+# compiles all the contracts in the project
+# this generates a json with the bytecode and ABI
 mox compile
+
+# show help
+mox run --help
+
+# mox wallet --help
+show wallet related commands (encrypt, decrypt, etc)
+
+
